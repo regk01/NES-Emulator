@@ -2,6 +2,8 @@
 
 A high-performance, cycle-accurate Nintendo Entertainment System (NES) emulator written in C with a Python-based frontend. This project utilizes `cppyy` for a high-speed C++/Python bridge, `miniaudio` for low-latency sound, and `pygame` for the display and UI.
 
+![Alt text](image.png)
+
 ## Features
 - **Cycle-Accurate CPU:** Implementation of the Ricoh 2A03 (MOS 6502).
 - **PPU Rendering:** Accurate pixel processing unit logic.
