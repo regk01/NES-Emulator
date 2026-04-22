@@ -1,6 +1,6 @@
-# Cycle-Accurate NES Emulator
+# NES Emulator
 
-A high-performance, cycle-accurate Nintendo Entertainment System (NES) emulator written in C with a Python-based frontend. This project utilizes `cppyy` for a high-speed C++/Python bridge, `miniaudio` for low-latency sound, and `pygame` for the display and UI.
+A Nintendo Entertainment System (NES) emulator written in C with a Python-based frontend. This project utilizes `cppyy` for a high-speed C++/Python bridge, `miniaudio` for low-latency sound, and `pygame` for the display and UI.
 
 ![Super Mario bros Loading Screen](image.png)
 
@@ -13,7 +13,7 @@ A high-performance, cycle-accurate Nintendo Entertainment System (NES) emulator 
 - **High-Performance Bridge:** Uses `cppyy` to call C functions with minimal overhead.
 
 ## Requirements
-- macOS (Optimized for Apple Silicon / M1)
+- macOS
 - Python 3.10+
 - requirements.txt
 - A C++ compiler (clang/gcc)
