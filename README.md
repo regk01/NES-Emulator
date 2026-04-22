@@ -20,16 +20,17 @@ A high-performance, cycle-accurate Nintendo Entertainment System (NES) emulator 
 Follow these steps to build and run the emulator:
 
 1. **Clone the repository:**
-   git clone [https://github.com/yourusername/nes-emulator.git](https://github.com/yourusername/nes-emulator.git)
+   git clone [https://github.com/regk01/nes-emulator.git](https://github.com/regk01/nes-emulator.git)
+   
    cd nes-emulator
 
-2. **Create library**
+3. **Create library**
     make
 
-3. **Setup the Environment**
+4. **Setup the Environment**
     make start_env
 
-4. **Run Emulator**
+5. **Run Emulator**
     make run_emulator
 
 ## Controls
