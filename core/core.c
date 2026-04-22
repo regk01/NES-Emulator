@@ -40,6 +40,33 @@ void NES_apu_data_callback(ma_device* pDevice, void* pOutput, const void* pInput
     }
 }
 
+void NES_reset(NES_CORE *self) {
+    CPU_init(&(self->cpu));
+    PPU_init(&(self->ppu));
+    APU_init(&(self->apu));
+    APU_connect_core(&(self->apu), self);
+}
+
+void NES_stop_audio(NES_CORE* self) {
+    if (self == NULL) return;
+
+    if (ma_device_is_started(&self->audio_device)) {
+        ma_device_stop(&self->audio_device);
+    }
+    
+    self->apu.buffer.ring_buffer.read_ptr = 0;
+    self->apu.buffer.ring_buffer.write_ptr = 0;
+    self->apu.buffer.ring_buffer.count = 0;
+}
+
+void NES_start_audio(NES_CORE* self) {
+    if (self == NULL) return;
+
+    if (!ma_device_is_started(&self->audio_device)) {
+        ma_device_start(&self->audio_device);
+    }
+}
+
 void NES_init(NES_CORE *self) {
     CPU_connect_core(&(self->cpu), self);
     PPU_connect_core(&(self->ppu), self);
@@ -47,6 +74,7 @@ void NES_init(NES_CORE *self) {
     CPU_init(&(self->cpu));
     PPU_init(&(self->ppu));
     APU_init(&(self->apu));
+    APU_connect_core(&(self->apu), self); // because of memset in APU_init, this has to be called after APU_init
 
     if (ma_context_init(NULL, 0, NULL, &self->audio_context) != MA_SUCCESS) {
         printf("Couldn't create miniaudio context\n");
@@ -73,6 +101,10 @@ void NES_init(NES_CORE *self) {
 
 void NES_set_cpu_pc(NES_CORE *self, int32 pc) {
     self->cpu.pc = pc;
+}
+
+void NES_set_cpu_ram(NES_CORE *self, uint16 addr, byte value) {
+    self->cpu_ram[addr & 0x7FF] = value;
 }
 
 void NES_clock(NES_CORE *self) {

@@ -1,4 +1,5 @@
 #include "apu/apu.h"
+#include "core.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -49,6 +50,10 @@ void APU_init(APU *self) {
     self->pulse_2.sequencer.max_steps = 8;
     self->triangle.sequencer.max_steps = 32;
     self->noise.lsfr = 0x01;
+}
+
+void APU_connect_core(APU *self, NES_CORE *core) {
+    self->core = core;
 }
 
 // Pulse stuff
@@ -124,8 +129,8 @@ void Triangle_cpu_write(Triangle *self, byte apu_status, uint16 addr, byte val) 
 // Noise stuff
 
 byte Noise_get_output(Noise *self) {
-    if (self->length_counter == 0) return 0;
-    return (self->lsfr & 0x01) ? 0: Envelope_get_volume(&(self->envelope));
+    if (self->lsfr & 0x01 || self->length_counter == 0) return 0;
+    return Envelope_get_volume(&(self->envelope));
 }
 
 void LinearShiftRegister_clock(Noise *self) {
@@ -134,7 +139,9 @@ void LinearShiftRegister_clock(Noise *self) {
 
     uint16 feedback = bit0 ^ bitX;
 
-    self->lsfr = (self->lsfr >> 1) | (feedback << 14);
+    self->lsfr >>= 1;
+    self->lsfr |= feedback << 14;
+    self->lsfr &= 0x7FFF;
 }
 
 void Noise_cpu_write(Noise *self, byte apu_status, uint16 addr, byte val) {
@@ -179,15 +186,15 @@ byte APU_cpu_read(APU *self, uint16 addr) {
 
     if (addr == 0x0015) {
         byte status = 0;
-        if (self->frame_counter.frame_interrupt) {
-            status |= 0x40;
-            self->frame_counter.frame_interrupt = false;
-        }
+        if (self->frame_counter.frame_interrupt) status |= 0x40;
         if (self->pulse_1.length_counter > 0) status |= 0x01;
         if (self->pulse_2.length_counter > 0) status |= 0x02;
         if (self->triangle.length_counter > 0) status |= 0x04;
         if (self->noise.length_counter > 0) status |= 0x08;
         data = status;
+
+        self->frame_counter.frame_interrupt = false;
+        self->core->irq_pending = false;
     }
 
     return data;
@@ -215,7 +222,9 @@ void APU_cpu_write(APU *self, uint16 addr, byte val) {
     if (0x0000 <= addr && addr <= 0x0003) Pulse_cpu_write(&(self->pulse_1), self->status.pulse_1, addr, val);
     else if (0x0004 <= addr && addr <= 0x0007) Pulse_cpu_write(&(self->pulse_2), self->status.pulse_2, addr, val);
     else if (0x0008 <= addr && addr <= 0x000B) Triangle_cpu_write(&(self->triangle), self->status.triangle, addr, val);
-    else if (0x000C <= addr && addr <= 0x000F) Noise_cpu_write(&(self->noise), self->status.noise, addr, val);
+    else if (0x000C <= addr && addr <= 0x000F){
+        Noise_cpu_write(&(self->noise), self->status.noise, addr, val);
+    }
     else if (0x0010 <= addr && addr <= 0x0013) DMC_cpu_write(&(self->dmc), self->status.enable_dmc, addr, val);
     else if (addr == 0x0015) {
         self->status.reg = val;
@@ -227,6 +236,10 @@ void APU_cpu_write(APU *self, uint16 addr, byte val) {
         self->frame_counter.irq_inhibit = (val >> 6) & 0x01;
         self->frame_counter.sequencer.step = 0;
         Sequencer_set_max_steps(&(self->frame_counter.sequencer), (val >> 7) & 0x01 ? 5: 4);
+        if (self->frame_counter.irq_inhibit) {
+            self->frame_counter.frame_interrupt = false;
+            self->core->irq_pending = false;
+        }
         if ((val >> 7) & 0x01) {
             APU_trigger_quarter(self);
             APU_trigger_half(self);
@@ -250,7 +263,10 @@ void APU_process_step(APU *self) {
             case 3:
                 APU_trigger_quarter(self);
                 APU_trigger_half(self);
-                if (!self->frame_counter.irq_inhibit) self->frame_counter.frame_interrupt = true;
+                if (!self->frame_counter.irq_inhibit) {
+                    self->frame_counter.frame_interrupt = true;
+                    self->core->irq_pending = true;
+                }
                 break;
         }
     } else { // 5 steps
@@ -287,21 +303,22 @@ float32 APU_get_output(APU *self) {
     float32 pulse_output = APU_pulse_table[pulse_1 + pulse_2];
     float32 tnd_output = APU_tnd_table[3 * triangle + 2 * noise + dmc];
 
-    float32 output = pulse_output + tnd_output;
-    return output;
+    return pulse_output + tnd_output;
 }
 
 void APU_clock(APU *self) {
     if (Divider_clock(&(self->triangle.timer))) {
         if (self->triangle.timer.period >= 2 && self->triangle.linear_counter > 0 && self->triangle.length_counter > 0) Sequencer_clock(&(self->triangle.sequencer));
     }
-    if (Divider_clock(&(self->noise.timer))) LinearShiftRegister_clock(&(self->noise));
     if (self->total_cycles % 2 == 0) {
         if (Divider_clock(&(self->pulse_1.timer))) Sequencer_clock(&(self->pulse_1.sequencer));
         if (Divider_clock(&(self->pulse_2.timer))) Sequencer_clock(&(self->pulse_2.sequencer));
+        if (Divider_clock(&(self->noise.timer))) LinearShiftRegister_clock(&(self->noise));
     }
 
-    self->buffer.accumulator += APU_get_output(self);
+    float32 sample = APU_get_output(self);
+
+    self->buffer.accumulator += sample;
     self->buffer.cycles_accumulated++;
     if (self->buffer.cycles_accumulated >= MAX_APU_BUFFER_CYCLES) {
         float32 final_sample = self->buffer.accumulator / self->buffer.cycles_accumulated;
@@ -311,7 +328,7 @@ void APU_clock(APU *self) {
         self->buffer.ring_buffer.count++;
 
         self->buffer.accumulator = 0;
-        self->buffer.cycles_accumulated = 0;
+        self->buffer.cycles_accumulated -= MAX_APU_BUFFER_CYCLES;
     }
 
     self->frame_counter.cycles_count++;
@@ -322,3 +339,21 @@ void APU_clock(APU *self) {
 
     self->total_cycles++;
 }
+
+
+    // // --- High-Pass Filter 1 (90 Hz) ---
+    // float32 hp1_out = 0.99968f * (self->buffer.filters.hp1_prev_out + sample - self->buffer.filters.hp1_prev_in);
+    // self->buffer.filters.hp1_prev_in = sample;
+    // self->buffer.filters.hp1_prev_out = hp1_out;
+    // sample = hp1_out; // Pass this result to the next filter
+
+    // // --- High-Pass Filter 2 (440 Hz) ---
+    // float32 hp2_out = 0.99845f * (self->buffer.filters.hp2_prev_out + sample - self->buffer.filters.hp2_prev_in);
+    // self->buffer.filters.hp2_prev_in = sample;
+    // self->buffer.filters.hp2_prev_out = hp2_out;
+    // sample = hp2_out; // Pass this result to the next filter
+
+    // // --- Low-Pass Filter (14 kHz) ---
+    // // This is different: y = y + alpha * (x - y)
+    // self->buffer.filters.lp_prev_out += 0.0468f * (sample - self->buffer.filters.lp_prev_out);
+    // sample = self->buffer.filters.lp_prev_out;

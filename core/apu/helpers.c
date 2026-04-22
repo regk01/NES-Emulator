@@ -2,7 +2,7 @@
 #include "apu/apu.h"
 
 void LengthCounter_clock(byte *self) {
-    if (*self > 0) *self--;
+    if (*self > 0) (*self)--;
 }
 
 byte LengthCounter_calculate_table_idx(byte val) {
@@ -18,7 +18,7 @@ void Divider_set_period_high(Divider *self, byte val) {
 }
 
 bool Divider_clock(Divider *self) {
-    if (self->counter > 0) {
+    if (self->counter == 0) {
         self->counter = self->period;
         return true;
     } else {
@@ -82,13 +82,11 @@ void Envelope_cpu_write(Envelope *self, uint16 addr, byte val) {
     self->loop = (val >> 5) & 0x0001;
     self->constant_volume = (val >> 4) & 0x0001;
     self->volume = val & 0x000F;
-
-    if (addr == 0x0003) self->start = true;
 }
 
 byte Envelope_get_volume(Envelope *self) {
     if (self->constant_volume) return self->volume;
-    else return self->decay_level;
+    return self->decay_level;
 }
 
 void Envelope_clock(Envelope *self) {

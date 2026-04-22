@@ -4,8 +4,10 @@
 #include "types.h"
 #include "helpers.h"
 
+typedef struct NES_CORE NES_CORE;
+
 #define CPU_CYCLES_COUNT 7457
-#define MAX_APU_BUFFER_CYCLES 40
+#define MAX_APU_BUFFER_CYCLES 1789773.0f/44100.0f
 #define AUDIO_SAMPLE_RATE 44100
 #define AUDIO_RING_BUFFER_SIZE 8192
 
@@ -49,6 +51,7 @@ typedef struct DMC {
 } DMC;
 
 typedef struct APU {
+    NES_CORE *core;
     PulseChannel pulse_1;
     PulseChannel pulse_2;
     Triangle triangle;
@@ -83,14 +86,24 @@ typedef struct APU {
             uint32 write_ptr;
             uint32 count;
         } ring_buffer;
+        struct {
+            // High-pass 1 (90 Hz)
+            float32 hp1_prev_in;
+            float32 hp1_prev_out;
+            // High-pass 2 (440 Hz)
+            float32 hp2_prev_in;
+            float32 hp2_prev_out;
+            // Low-pass (14 kHz)
+            float32 lp_prev_out;
+        } filters;
         float32 accumulator;
         float32 last_sample;
-        float32 low_pass_out;
         uint32 cycles_accumulated;
     } buffer;
 } APU;
 
 void APU_init(APU *self);
+void APU_connect_core(APU*self, NES_CORE *core);
 byte APU_cpu_read(APU *self, uint16 addr);
 void APU_cpu_write(APU *self, uint16 addr, byte val);
 void APU_clock(APU *self);

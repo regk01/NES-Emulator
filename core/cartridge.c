@@ -4,7 +4,7 @@
 #include "cartridge.h"
 #include "core.h"
 
-// works for mapper 000 only
+// works for mapper 000 & 001 only
 
 bool Cartridge_cpu_read(Cartridge *self, uint16 addr, byte *data) {
     uint32 mapped_addr = 0;

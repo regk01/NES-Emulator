@@ -87,10 +87,13 @@ void CPU_clock(CPU *self) {
     }
 
     if (self->cycles == 0) {
-        // TODO: check for interrupts
         if (self->core->nmi_pending) {
             self->core->nmi_pending = false;
             CPU_NMI(self);
+        } else if (self->core->irq_pending && !CPU_get_flag(self, I)) {
+            // printf("IRQ Executed at PC: %04X\n", self->pc);
+            // self->core->irq_pending = false;
+            CPU_IRQ(self);
         } else {
             self->opcode = CPU_read(self, self->pc++);
             self->cycles = self->lookup[self->opcode].cycles;
@@ -165,22 +168,20 @@ void CPU_NMI(CPU *self) {
 }
 
 void CPU_IRQ(CPU *self) {
-    if (!(CPU_get_flag(self, I))) { // I == 0
-        CPU_stack_push(self, (self->pc >> 8) & 0x00FF); // high byte first
-        CPU_stack_push(self, self->pc & 0x00FF); // then low byte
+    CPU_stack_push(self, (self->pc >> 8) & 0x00FF); // high byte first
+    CPU_stack_push(self, self->pc & 0x00FF); // then low byte
 
-        CPU_set_flag(self, U, true);
-        CPU_set_flag(self, B, false);
-        CPU_stack_push(self, self->sr);
+    CPU_set_flag(self, U, true);
+    CPU_set_flag(self, B, false);
+    CPU_stack_push(self, self->sr);
 
-        CPU_set_flag(self, I, true);
+    CPU_set_flag(self, I, true);
 
-        byte low = CPU_read(self, 0xFFFE);
-        byte high = CPU_read(self, 0xFFFF);
-        self->pc = (high << 8) | low;
+    byte low = CPU_read(self, 0xFFFE);
+    byte high = CPU_read(self, 0xFFFF);
+    self->pc = (high << 8) | low;
 
-        self->cycles = 7;
-    }
+    self->cycles = 7;
 }
 
 // Addressing Modes
@@ -683,8 +684,11 @@ uint8 PLA(CPU *self) {
 }
 
 uint8 PLP(CPU *self) {
-    byte temp = CPU_stack_pop(self);
-    self->sr = (temp & 0xEF) | 0x20;
+    // byte temp = CPU_stack_pop(self);
+    // self->sr = (temp & 0xEF) | 0x20;
+    self->sr = CPU_stack_pop(self);
+    CPU_set_flag(self, U, true);
+    CPU_set_flag(self, B, false);
     return 0;
 }
 
