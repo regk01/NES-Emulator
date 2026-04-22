@@ -35,17 +35,29 @@ Follow these steps to build and run the emulator:
 
 ## Controls
 Key         NES Button / System Function
+
 W           D-Pad Up
+
 S           D-Pad Down
+
 A           D-Pad Left
+
 D           D-Pad Right
+
 Return      Start
+
 Tab         Select
+
 Space       A Button
+
 L-Shift     B Button
+
 P           Toggle Pause
+
 Cmd+Q       Quit Emulator
+
 ]           Skip to level 2-2 in Super Mario Bros (Don't press in other games. I like the underwater tune and skip just to hear it)
+
 
 ## Architecture
 The project follows a modular design separating high-level UI logic from low-level hardware emulation.
