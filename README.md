@@ -34,6 +34,7 @@ Follow these steps to build and run the emulator:
     make run_emulator
 
 ## Controls
+'''
 Key         NES Button / System Function
 
 W           D-Pad Up
@@ -57,7 +58,7 @@ P           Toggle Pause
 Cmd+Q       Quit Emulator
 
 ]           Skip to level 2-2 in Super Mario Bros (Don't press in other games. I like the underwater tune and skip just to hear it)
-
+'''
 
 ## Architecture
 The project follows a modular design separating high-level UI logic from low-level hardware emulation.
