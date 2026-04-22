@@ -1,4 +1,3 @@
-// AI gen
 #include "mapper.h"
 #include <stdlib.h>
 
