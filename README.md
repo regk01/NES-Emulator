@@ -34,7 +34,7 @@ Follow these steps to build and run the emulator:
     make run_emulator
 
 ## Controls
-'''
+'''text
 Key         NES Button / System Function
 
 W           D-Pad Up
