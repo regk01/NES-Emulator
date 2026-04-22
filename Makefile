@@ -14,8 +14,13 @@ TARGET = $(BUILD_DIR)/libnes_core.dylib
 
 all: clean $(TARGET)
 
-test:
-	DYLD_LIBRARY_PATH=/opt/homebrew/lib python3 -m src.tests.test_smb
+run_emulator:
+	DYLD_LIBRARY_PATH=/opt/homebrew/lib python3 -m src.main
+
+start_env:
+	python3 -m venv env
+	source env/bin/activate
+	pip install -r requirements.txt
 
 generate:
 	@echo "Generating CPU instructions..."

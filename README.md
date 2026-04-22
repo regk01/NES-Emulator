@@ -2,4 +2,6 @@ To build:
 
 make
 
-make test
+make start_env
+
+make run_emulator

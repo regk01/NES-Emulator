@@ -1,4 +1,4 @@
-from .. import nes as nes_core
+from . import nes as nes_core
 
 def main():
     nes = nes_core.NES_CORE()
