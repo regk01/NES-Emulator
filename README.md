@@ -30,9 +30,11 @@ Follow these steps to build and run the emulator:
     make
 
 4. **Setup the Environment**
-    make start_env
+    make setup_env # installs brew packages
+    source env/bin/activate
+    pip install -r requirements.txt
 
-5. **Run Emulator**
+6. **Run Emulator**
     make run_emulator
 
 ## Controls
