@@ -17,10 +17,9 @@ all: clean $(TARGET)
 run_emulator:
 	DYLD_LIBRARY_PATH=/opt/homebrew/lib python3 -m src.main
 
-start_env:
+setup_env:
 	python3 -m venv env
-	source env/bin/activate
-	pip install -r requirements.txt
+	brew install cairo pkg-config zstd lz4 xz
 
 generate:
 	@echo "Generating CPU instructions..."
