@@ -26,19 +26,20 @@ Follow these steps to build and run the emulator:
    
    cd nes-emulator
 
-3. **Create library**
+2. **Create library**
     make
 
     # Install Homebrew if you don't have it
 
-5. **Setup the Environment**
+3. **Setup the Environment**
+   
     make setup_env # installs brew packages
 
     source env/bin/activate
 
     pip install -r requirements.txt
 
-7. **Run Emulator**
+4. **Run Emulator**
    
     make run_emulator
 
