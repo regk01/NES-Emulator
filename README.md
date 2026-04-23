@@ -28,8 +28,9 @@ Follow these steps to build and run the emulator:
 
 3. **Create library**
     make
+    # Install Homebrew if you don't have it
 
-4. **Setup the Environment**
+5. **Setup the Environment**
     make setup_env # installs brew packages
     source env/bin/activate
     pip install -r requirements.txt
