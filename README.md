@@ -5,10 +5,10 @@ A Nintendo Entertainment System (NES) emulator written in C with a Python-based 
 ![Super Mario bros Loading Screen](image.png)
 
 ## Features
-- **Cycle-Accurate CPU:** Implementation of the Ricoh 2A03 (MOS 6502).
+- **Cycle-Accurate CPU:** Implementation of the Ricoh 2A03 (MOS 6502). All legal opcodes implemented.
 - **PPU Rendering:** Accurate pixel processing unit logic.
 - **APU Audio:** Integrated audio processing unit with multi-channel support (DMC not implemented fully).
-- **Mappers** Mappers 000 and 001 implementation
+- **Mappers** Mappers 000, 001, 002, 004 implementation
 - **Python UI:** Modern UI features including a native file dialog.
 - **High-Performance Bridge:** Uses `cppyy` to call C functions with minimal overhead.
 
