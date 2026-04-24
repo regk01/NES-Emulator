@@ -3,6 +3,8 @@
 
 #include "types.h"
 
+#define PATTERN_TABLE_SIZE 128*128
+
 typedef struct NES_CORE NES_CORE;
 
 typedef union LoopyRegister {
@@ -113,6 +115,14 @@ typedef struct PPU {
     byte OAM_latch;
     bool sprite_0_hit_possible;
     bool active_sprite_0_hit_possible;
+
+    // For UI
+    uint32 palette_ui[32];
+    byte current_palette_ui;
+    uint32 pattern_table_ui[2 * PATTERN_TABLE_SIZE];
+    // To know when I need to redraw the palette ui and pattern table ui
+    bool palette_ui_dirty;
+    bool pattern_table_ui_dirty;
 } PPU;
 
 byte PPU_cpu_read(PPU *self, uint16 addr);
@@ -123,6 +133,11 @@ void PPU_init(PPU *self);
 
 void PPU_connect_core(PPU *self, NES_CORE *core);
 void PPU_clock(PPU *self);
+
+// UI stuff for python
+byte *PPU_get_ui_palette(PPU *self, byte idx);
+byte *PPU_get_ui_pattern_table(PPU *self, byte idx);
+void PPU_set_current_ui_palette(PPU *self, byte palette);
 
 extern uint32 NES_palette[64];
 

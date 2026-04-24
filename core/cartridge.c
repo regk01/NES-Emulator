@@ -4,7 +4,10 @@
 #include "cartridge.h"
 #include "core.h"
 
-// works for mapper 000 & 001 only
+void Cartridge_connect_core(Cartridge *self, NES_CORE *core) {
+    self->core = core;
+    self->mapper->core = core;
+}
 
 bool Cartridge_cpu_read(Cartridge *self, uint16 addr, byte *data) {
     uint32 mapped_addr = 0;
@@ -155,3 +158,10 @@ void Cartridge_load_rom(Cartridge *self, char *name) {
     fclose(file);
 }
 
+void Cartridge_free_rom(Cartridge *self) {
+    free(self->chr_rom);
+    free(self->prg_rom);
+    free(self->prg_ram);
+
+    Mapper_destroy(self->mapper);
+}

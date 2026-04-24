@@ -3,7 +3,7 @@
 #include "core.h"
 #include "cartridge.h"
 #include "mapper.h"
- 
+
 // checks for ppu name table idx and accounts for different scrolling types
 byte PPU_get_name_table_idx(PPU *self, uint16 addr) {
     switch(self->core->cart.mapper->mirroring_mode) {
@@ -147,6 +147,7 @@ void PPU_write(PPU *self, uint16 addr, byte val) {
     addr &= 0x3FFF;
     if (Cartridge_ppu_write(&(self->core->cart), addr, val)) {
         // Let cartridge check first
+        self->pattern_table_ui_dirty = true;
     } else if (0x2000 <= addr && addr <= 0x3EFF) { // Nametables
         // I don't think the code should reach here for four screen mode. The mapper should catch that
         // and return if needed. Keep in mind though
@@ -160,6 +161,7 @@ void PPU_write(PPU *self, uint16 addr, byte val) {
         if (addr == 0x0018) addr = 0x0008;
         if (addr == 0x001C) addr = 0x000C;
         self->palette_RAM_idxs[addr] = val;
+        self->palette_ui_dirty = true;
     }
 }
 
@@ -194,6 +196,9 @@ void PPU_init(PPU *self) {
     self->next_sprite_pattern_table_low = 0x00;
     self->next_sprite_pattern_table_high = 0x00;
     self->OAM_latch = 0x00;
+
+    self->palette_ui_dirty = true;
+    self->pattern_table_ui_dirty = true;
 }
 
 void PPU_fetch_name_table_byte(PPU *self) {
@@ -358,7 +363,69 @@ void PPU_set_pixel_color(PPU *self, int64 scanline, int64 cycle, uint32 color) {
     }
 }
 
+
+
+// UI Stuff
+
+void PPU_set_current_ui_palette(PPU *self, byte palette) {
+    self->current_palette_ui = palette;
+    self->pattern_table_ui_dirty = true;
+}
+
+byte *PPU_get_ui_palette(PPU *self, byte idx) {
+    return self->palette_ui + idx * 4;
+}
+
+void PPU_create_ui_palette(PPU *self) {
+    for (int32 palette = 0; palette < 8; palette++) {
+        for (int32 pixel = 0; pixel < 4; pixel++) {
+            self->palette_ui[palette * 4 + pixel] = PPU_get_color(self, palette, pixel);
+        }
+    }
+}
+
+byte *PPU_get_ui_pattern_table(PPU *self, byte idx) {
+    return self->pattern_table_ui + idx * PATTERN_TABLE_SIZE;
+}
+
+void PPU_create_ui_pattern_table(PPU *self, byte palette) {
+    for (int32 idx = 0; idx < 2; idx++) {
+        for (int32 y = 0; y < 16; y++) { // tile Y
+            for (int32 x = 0; x < 16; x++) { // tile X
+                uint16 offset = y * 256 + x * 16;
+                for (int32 row = 0; row < 8; row++) { // row in 8x8 tile
+                    byte tile_low = PPU_read(self, idx * 0x1000 + offset + row);
+                    byte tile_high = PPU_read(self, idx * 0x1000 + offset + row + 0x08);
+                    for (int32 col = 0; col < 8; col++) {
+                        byte pixel = (tile_high & 0x01) << 1 | (tile_low & 0x01);
+                        tile_low >>= 1;
+                        tile_high >>= 1;
+
+                        uint32 pixel_x = x * 8 + (7 - col);
+                        uint32 pixel_y = y * 8 + row;
+                        self->pattern_table_ui[idx * PATTERN_TABLE_SIZE + pixel_y * 128 + pixel_x] = PPU_get_color(self, palette, pixel);
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+
 void PPU_clock(PPU *self) {
+    // UI stuff
+    if (self->palette_ui_dirty) {
+        PPU_create_ui_palette(self);
+        self->palette_ui_dirty = false;
+    }
+    if (self->pattern_table_ui_dirty) {
+        PPU_create_ui_pattern_table(self, self->current_palette_ui);
+        self->pattern_table_ui_dirty = false;
+    }
+
+
     if (-1 <= self->scanline && self->scanline <= 239) {
         // Pre-render scanlines and Visible scanlines and fetching for next scanline
         if (self->is_odd_frame && self->scanline == 0 && self->cycle == 0 && (self->mask.enable_background_rendering || self->mask.enable_sprite_rendering)) self->cycle++; // odd frame
@@ -577,6 +644,10 @@ void PPU_clock(PPU *self) {
     PPU_set_pixel_color(self, self->scanline, self->cycle-1, PPU_get_color(self, final_palette, final_pixel));
 
     self->cycle++;
+    if (self->cycle == 260 && self->scanline < 240 && (self->mask.enable_background_rendering || self->mask.enable_sprite_rendering)) {
+        self->core->cart.mapper->scanline(self->core->cart.mapper);
+    }
+
     if (self->cycle >= 341) {
         self->cycle = 0;
         self->scanline++;

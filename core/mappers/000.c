@@ -1,6 +1,8 @@
 // NROM
 #include "mapper.h"
 
+void mapper000_scanline(Mapper *self) {}
+
 Mapper_Return_Type mapper000_cpuMapRead(Mapper *self, uint16 addr, uint32 *mapped_addr) {
     if (addr >= 0x6000 && addr <= 0x7FFF) {
         *mapped_addr = addr & 0x1FFF;

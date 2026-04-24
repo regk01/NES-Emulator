@@ -1,6 +1,8 @@
 #include "mapper.h"
 #include <stdlib.h>
 
+void mapper001_scanline(Mapper *self) {}
+
 // 1. RESET: Initialize registers to power-on/reset defaults
 void mapper001_reset(Mapper *self) {
     Mapper001_State *st = (Mapper001_State *)self->state;
@@ -32,9 +34,9 @@ Mapper_Return_Type mapper001_cpuMapWrite(Mapper *self, uint16 addr, uint32 *mapp
         st->shift_register |= (data & 0x01) << 4;
 
         if (complete) {
-            uint8 target = (addr >> 13) & 0x03;
-            uint8 val = st->shift_register; // The 5-bit value collected
-            
+            byte target = (addr >> 13) & 0x03;
+            byte val = st->shift_register; // The 5-bit value collected
+
             switch (target) {
                 case 0: // Control Register
                     st->control_reg = val;
@@ -66,7 +68,7 @@ Mapper_Return_Type mapper001_cpuMapRead(Mapper *self, uint16 addr, uint32 *mappe
     if (addr < 0x8000) return NONE;
 
     Mapper001_State *st = (Mapper001_State *)self->state;
-    uint8 prg_mode = (st->control_reg >> 2) & 0x03;
+    byte prg_mode = (st->control_reg >> 2) & 0x03;
 
     if (prg_mode <= 1) {
         // 32KB Mode

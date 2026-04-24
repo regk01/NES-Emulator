@@ -43,6 +43,7 @@ NES_CORE *NES_create();
 void NES_destroy(NES_CORE *self);
 
 void NES_load_rom(NES_CORE *self, const char *name);
+void NES_free_rom(NES_CORE *self);
 void NES_init(NES_CORE *self);
 void NES_reset(NES_CORE *self);
 void NES_step(NES_CORE *self);
@@ -57,6 +58,7 @@ void NES_start_audio(NES_CORE* self);
 void NES_enable_logging(NES_CORE *self);
 void NES_set_cpu_pc(NES_CORE *self, int32 pc);
 void NES_set_cpu_ram(NES_CORE *self, uint16 addr, byte value);
+void NES_set_current_ui_palette(NES_CORE *self, byte palette);
 
 #ifdef __cplusplus
 }
