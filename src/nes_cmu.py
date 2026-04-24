@@ -26,13 +26,14 @@ class NES_CORE:
 
         # Create PIL image from the raw pointer
         # 'RGBX' handles the 32-bit XRGB format by treating the 'X' as padding
-        return PILImage.frombuffer(
+        image = PILImage.frombuffer(
             'RGBX',
             (self.width, self.height), 
             self.core_ptr.screen, 
             'raw', 
             'BGRX', 0, 1
         )
+        return image
 
 # --- CMU Graphics App Logic ---
 
@@ -51,25 +52,26 @@ def onAppStart(app):
 def onStep(app):
     gbl.NES_controller_push_state(app.nes.core_ptr, app.nes.input_state)
 
-    # 1. Capture the frame from the C++ core via PIL
     pil_img = app.nes.get_frame_as_pil()
 
-    # 2. Convert PIL Image to CMUImage for rendering
-    app.display_image = CMUImage(pil_img)
+    scaled = pil_img.resize(
+        (app.nes.width * app.scale, app.nes.height * app.scale),
+        PILImage.NEAREST
+    )
+
+    app.display_image = CMUImage(scaled)
 
 def redrawAll(app):
     if app.display_image:
-        # Draw the frame scaled to the window size
         drawImage(app.display_image, 0, 0, width=app.width, height=app.height)
     else:
         drawLabel("Loading ROM...", app.width/2, app.height/2, size=20)
 
 def handle_input(app, key, is_pressed):
-    # Map CMU keys to NES bitmask
     mapping = {
         'w': 0x08, 's': 0x04, 'a': 0x02, 'd': 0x01,
-        'tab': 0x20, 'enter': 0x10, 'space': 0x80, 'leftShift': 0x40,
-        'up': 0x08, 'down': 0x04, 'left': 0x02, 'right': 0x01 # Add arrow keys too
+        'tab': 0x20, 'enter': 0x10, 'space': 0x80, 'z': 0x40, # had to change from shift to z because cmu graphics
+        'up': 0x08, 'down': 0x04, 'left': 0x02, 'right': 0x01
     }
 
     clean_key = key.lower()

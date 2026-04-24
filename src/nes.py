@@ -150,14 +150,14 @@ class NES_CORE:
                     gbl.NES_set_current_ui_palette(self.core_ptr, p_idx)
 
     def draw_debug_ui(self):
-        start_x = self.width + 20
-        sidebar_rect = pygame.Rect(start_x - 10, 0, 350, self.height + self.STATUS_BAR_HEIGHT)
+        start_x = self.width
+        sidebar_rect = pygame.Rect(start_x, 0, 350, self.height + self.STATUS_BAR_HEIGHT)
         pygame.draw.rect(self.main_win, (50, 50, 50), sidebar_rect)
 
         for p_idx in range(8):
             row = p_idx // 4
             col = p_idx % 4
-            base_x = self.width + 20 + (col * 70)
+            base_x = self.width + 40 + (col * 70)
             base_y = self.PALETTE_Y + (row * 30)
 
             for c_idx in range(4):
@@ -169,7 +169,7 @@ class NES_CORE:
             SCALE = 2
             table_surf = pygame.Surface((128, 128), 0, 32, self.XRGB_MASKS).convert()
             pygame.surfarray.blit_array(table_surf, self.pattern_tables[i].T)
-            x_pos = self.width + 65
+            x_pos = self.width + 50
             y_pos = self.PATTERN_TABLE_Y + (i * (128 * SCALE + 50))
 
             scaled_size = (128 * SCALE, 128 * SCALE)
@@ -192,7 +192,7 @@ class NES_CORE:
                     gbl.NES_step(self.core_ptr)
             if keys[pygame.K_1]:
                 gbl.NES_step_frame(self.core_ptr)
-        
+
         if keys[pygame.K_p]:
             self.isPaused = not self.isPaused
         
